@@ -1,0 +1,19 @@
+# Conda environment for Hydro Fetch
+#
+# Create:   conda env create -f environment.yaml
+# Activate: conda activate hydro_fetch
+# Update:   conda env update -f environment.yaml
+# Remove:   conda deactivate && conda env remove -n hydro_fetch
+name: hydro_fetch
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  # development tools
+  - ruff
+  - pytest
+  - coverage
+  - ipdb
+  - pip:
+      - -e .

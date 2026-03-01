@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier; DO NOT EDIT
+_commit: v1.2.0
+_src_path: /home/dcl3nd/dev/copier-python-template
+author_email: daniel.lassiter@outlook.com
+author_name: Daniel Lassiter
+conda_env_name: hydro_fetch
+description: Retrieve and process hydrologic datasets including MRMS radar rainfall
+    and AORC precipitation data
+github_username: lassiterdc
+package_name: hydro_fetch
+project_name: Hydro Fetch
+project_slug: hydro-fetch
+python_version: '3.11'
