@@ -7,6 +7,7 @@
 name: hydro_fetch
 channels:
   - conda-forge
+  - bioconda
 dependencies:
   - python=3.11
   - pip
@@ -15,5 +16,41 @@ dependencies:
   - pytest
   - coverage
   - ipdb
+  # --- added by refactor-plan audit (2026-03-01) ---
+  # core scientific stack
+  - numpy
+  - pandas
+  - xarray
+  - dask
+  - scipy
+  - flox
+  # geospatial
+  - geopandas
+  - rioxarray
+  - rasterio
+  - shapely
+  - cartopy
+  # data formats
+  - zarr
+  - netcdf4
+  - cfgrib
+  - eccodes
+  # cloud / remote access
+  - fsspec
+  - s3fs
+  # configuration
+  - pydantic>=2
+  - pyyaml
+  # workflow orchestration (bioconda; pinned to match snakemake-specialist workspace)
+  - snakemake>=9.15
+  # CLI and utilities
+  - typer
+  - tqdm
+  - tenacity
+  # visualization
+  - matplotlib
+  # --- end refactor-plan additions ---
   - pip:
       - -e .
+      # pip-only: not available on conda channels
+      - snakemake-executor-plugin-slurm
