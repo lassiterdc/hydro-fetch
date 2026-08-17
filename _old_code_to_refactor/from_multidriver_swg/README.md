@@ -66,8 +66,8 @@ This file has three parts. **The third is not hydro-fetch's**, and the source fi
 
 | Source lines | Section | Whose |
 |---|---|---|
-| ~1–251 | **Acquisition.** Download CO-OPS `water_level`, `predictions`, `hourly_height`, `high_low`; concatenate; compute `surge_ft = waterlevel_ft - tide_ft`; convert EST→UTC; export csv + metadata JSON + gage shapefile + SWMM `.dat` | **hydro-fetch** |
-| ~252–362 | **Characterization.** Cramér–von Mises and rank-sum comparison of hourly vs 6-minute surge distributions, walking forward a year at a time until the two are not distinguishable | **hydro-fetch** — this is QAQC of the product's own fitness, which a data producer owes its consumers |
+| ~1–283 | **Acquisition.** Download CO-OPS `water_level`, `predictions`, `hourly_height`, `high_low`; concatenate; compute `surge_ft = waterlevel_ft - tide_ft`; convert EST→UTC; export csv + metadata JSON + gage shapefile + SWMM `.dat` | **hydro-fetch** |
+| ~283–362 | **Characterization.** Cramér–von Mises and rank-sum comparison of hourly vs 6-minute surge distributions, walking forward a year at a time until the two are not distinguishable | **hydro-fetch** — this is QAQC of the product's own fitness, which a data producer owes its consumers |
 | ~364–end | **Event selection.** `surge_event_selection()`, threshold search targeting ~5 events/year, event summary + time-series export, hourly-vs-6-min event cross-check | **`multidriver-swg` — NOT absorbed as scope.** The source file's own section header reads `#%% transferred to script b2` |
 
 **The code is physically present in the copied file but is NOT claimed.** It was retained unmodified so the file stays readable end to end and so the boundary is visible in context rather than asserted in prose. If `_b2_event_selection.py` already carries this logic — and its author's own comment says it was transferred there — then **this tail is dead weight here and live code there.** Confirm against `_b2` rather than trusting either comment.
@@ -120,7 +120,9 @@ Line 2 reads `from _inputs import def_inputs_for_c`. **`_inputs.py` defines no f
 
 The same fossil appears in `_b_gen_wshed-...` as a commented-out `def_inputs_for_b()` call and in `_a_dwnld_...` as a commented-out `def_inputs_for_a()` call, so `_inputs.py` evidently once exposed per-script accessor functions and was flattened without updating `_c`.
 
-**Handling:** repaired, because there was no working behavior to preserve and "self-contained" would otherwise be meaningless for this file. A second-order problem surfaced in the process: the removed call unpacked a name `f_hourlyprecip`, which **also does not exist** in the source module. `_paths.py` aliases it to `f_hourlyprecip_airport` — the only hourly-precipitation candidate present — and flags that as an **inference to confirm against the actual data**, not a fact.
+**Handling:** repaired, because there was no working behavior to preserve and "self-contained" would otherwise be meaningless for this file. A second-order problem surfaced in the process: the removed call unpacked a name `f_hourlyprecip`, which **also does not exist** in the source module.
+
+**CORRECTED 2026-08-17 — the alias in `_paths.py` is probably WRONG, not merely unconfirmed.** The `multidriver-swg-specialist` narrowed it: `_c` reads `f_daily_summaries` (the **multi-station** daily file) and its whole purpose is `find_stations_with_min_record_length` **across stations**, which is meaningless against a one-station airport export; `_c:105` further expects a `STATION_NAME` column a single-airport export would not need. The `_airport` suffix marks the single-station members of a pair. So `f_hourlyprecip` was almost certainly a **multi-station hourly** file that `_inputs.py` never defined, and aliasing it to `f_hourlyprecip_airport` pairs a multi-station daily with a single-station hourly. **Treat the alias as a placeholder for a missing constant, not as a probable match.**
 
 ### 5.2 `_a_dwnld_and_process_water-level-data.py` raises `NameError` partway through
 
@@ -135,6 +137,48 @@ It defines `surge_event_selection()` (source line ~369) and then calls **`wlevel
 **Handling:** preserved, with an environment-variable escape hatch so the module can be imported for reading without reproducing the dependence. Absent the variable, the original behavior stands. Repairing it properly is an architectural decision (a project config declaring its own roots), not a shim decision.
 
 ---
+
+### 5.4 A lat/lon transposition writes the gage shapefile to the wrong hemisphere
+
+`_a_dwnld_and_process_water-level-data.py:257` (absorbed copy):
+
+```python
+gdf = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lat, df.lng))
+```
+
+`points_from_xy(x, y)` takes **x first**, and x must be longitude. Passing `lat` as `x` writes the Sewells Point gage shapefile with transposed coordinates — the gage lands in the Indian Ocean. No retained `multidriver-swg` script reads `f_out_a_shp`, which is why this has never bitten anyone, but it sits in the acquisition section hydro-fetch has claimed and it will bite the first person who opens that shapefile.
+
+**Found by the `multidriver-swg-specialist` on review, not by the absorbing agent.** It is recorded here because the original list of three was asserted as complete and was not.
+
+### 5.5 The SWMM export writes `.dat` files for columns that are not gages
+
+`_b_gen_wshed-precip-tseries-from-mrms.py:317`:
+
+```python
+gage_ids = df_mrms_tseries.columns
+```
+
+That column set includes `rain_mean` **and** `bias_corrected`. The loop then writes a `.dat` per column, emitting a spurious `b_mrms_rainfall_in_per_hr_rain_mean.dat` (the watershed mean masquerading as a gage) and a `b_mrms_rainfall_in_per_hr_bias_corrected.dat` (a boolean divided by 25.4, filtered to `> 0`, written as inches of rain). **Since the SWMM formatting was scoped into hydro-fetch, this is now hydro-fetch's defect.**
+
+Root cause, and it is architectural rather than local: **the code has no first-class notion of "which columns are grid cells."** `multidriver-swg`'s `_utils.py:117` independently guesses the same thing by negation (`[col for col in ... if 'mm_per_hr' not in col]`), which means any column added to `mrms_rainfall.csv` is silently averaged into the rainfall. Two repos, two guesses, both wrong in different ways. The grid-cell column set is a real entity that currently exists only as an implicit convention re-derived at three call sites.
+
+### 5.6 A fourth broken script — in `multidriver-swg`'s tree, not absorbed
+
+`_d_build_water_level_generator.py:12` carries the `def_inputs_for_*` fossil **live** and uncommented: `from _inputs import def_inputs_for_d`. Since `_inputs.py` defines zero functions, `_d` raises `ImportError` on line 12 and could never have run as committed. It also unpacks `f_realizations`, `sst_tstep_min`, and `dir_time_series`, none of which exist as constants (only the near-misses `f_realizations_hrly` and `sst_hrly_tstep_min` do).
+
+Not absorbed and not hydro-fetch's to fix — recorded because §5.1's framing implied the fossil had been traced to completion, and it had not.
+
+## 5A. The NCEI absorption is INCOMPLETE — correction to §2
+
+**Recorded 2026-08-17 after review.** Applying the inclusion predicate to what actually happens with NCEI data gives a different answer than the original selection did.
+
+`_c_gen_ncei_hrly_and_daily_data.py` **persists nothing.** Its two output-path imports (`fld_out_c_plts`, `fld_out_c_processed_data`) are never used; the file ends having produced two in-memory DataFrames and a set of unsaved figures. It is an interactive exploration script and produces **zero artifacts `multidriver-swg` consumes.**
+
+Meanwhile the NCEI processing that **does** feed the pipeline is `_utils.process_ncei_data` (`multidriver-swg/_old_code_to_refactor/_utils.py:1991`), called at `_b2:70` — inches→mm, per-timestep→per-hour, EST→UTC, resample-to-target-step, `years_to_exclude` filter. Zero stochastic content. Under the stated predicate it is hydro-fetch's, and it was **not** absorbed. The `999.99` missing-sentinel handling at `_b2:34` belongs with it.
+
+**Disposition:** `process_ncei_data` and the sentinel handling are claimed as hydro-fetch's scope and are pending extraction; `_c` **stays** — NCEI station QAQC is a hydro-fetch capability even though this particular instance persists nothing. This is an ADDITION to the absorbed set, not a swap.
+
+**Separately: there is no NCEI acquisition code in either repo.** `f_hourlyprecip_airport` names a hand-dated manual download (`2024-5-16_NCEI_airport_hourly.csv`); nothing fetches it. If hydro-fetch's scope is "acquire the hydrologic inputs," this is a hole in the acquisition layer rather than merely an unclaimed file.
 
 ## 6. What this directory is, and what it is not
 
@@ -152,4 +196,4 @@ Known related work chunks in the refactor plan: `03D aorc download`, `02E point 
 - **Still yours:** everything in `_a_dwnld_and_process_water-level-data.py` from `#%% transferred to script b2` onward — surge event selection, thresholds, event summaries and time series. The physical lines exist in our copy for readability; the *scope* did not transfer. Check whether `_b2_event_selection.py` already supersedes them.
 - **Still yours, untouched:** `_b2`–`_b7`, `_d_build_water_level_generator.py`, `__ref_ams_functions.py`, `_inputs.py`, `_utils.py`.
 - **We did not modify your repo.** Verify that yourself rather than taking this line for it.
-- **Two of the four scripts are broken as committed in your tree** (§ 5.1, § 5.2). If your refactor plan has chunks that assume they run, those chunks rest on a false premise — and that is true on your side whether or not the code moves.
+- **Two of the four absorbed scripts are broken as committed in your tree** (§ 5.1, § 5.2), and a fifth script you retained — `_d_build_water_level_generator.py` — carries the same `def_inputs_for_*` fossil live (§ 5.6). If your refactor plan has chunks that assume they run, those chunks rest on a false premise — and that is true on your side whether or not the code moves.

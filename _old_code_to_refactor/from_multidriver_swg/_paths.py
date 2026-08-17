@@ -132,11 +132,23 @@ f_hourlyprecip_airport = fldr_NCEI + "2024-5-16_NCEI_airport_hourly.csv"
 
 # DEFECT RECORDED. `_c` expects a symbol named `f_hourlyprecip`. The source module
 # defines `f_hourlyprecip_airport` and no bare `f_hourlyprecip`. `_c` was already
-# unrunnable for a second, independent reason (see README.md § Defects found in
-# the source, item 1), so there is no observed behavior to preserve here. The
-# airport file is the only hourly-precip candidate in the source module and is
-# aliased on that basis -- this is an INFERENCE, flagged as such, and the refactor
-# should confirm it against the actual data rather than trusting this line.
+# unrunnable for a second, independent reason (see README.md § 5.1), so there is
+# no observed behavior to preserve here.
+#
+# CORRECTED 2026-08-17 -- THIS ALIAS IS PROBABLY WRONG. It was first recorded as an
+# unconfirmed inference; review narrowed it further and the direction is negative:
+#   - `_c` reads `f_daily_summaries`, the MULTI-STATION daily file.
+#   - `_c`'s whole purpose is `find_stations_with_min_record_length` ACROSS stations,
+#     which is meaningless against a one-station airport export.
+#   - `_c:105` expects a `STATION_NAME` column a single-airport export would not need.
+#   - The `_airport` suffix marks the SINGLE-station members of a pair, and the
+#     source module carries a distinct `f_daily_summaries_airport` for that case.
+# So `f_hourlyprecip` was almost certainly a MULTI-STATION HOURLY file that
+# `_inputs.py` never defined, and this alias pairs a multi-station daily with a
+# single-station hourly -- a mismatched pair, not a probable match.
+#
+# TREAT THIS AS A PLACEHOLDER FOR A MISSING CONSTANT. Do not carry the pairing
+# forward into the refactor; resolve it against the actual NCEI data holdings.
 f_hourlyprecip = f_hourlyprecip_airport
 
 fld_out_c_plts = fldr_NCEI + "qaqc_plots/"
