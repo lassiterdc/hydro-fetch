@@ -15,7 +15,7 @@ readme = "README.md"
 # commercial use. Deliberately NOT an OSI-approved license: no OSI license can
 # express a noncommercial restriction, so "open source" must not be used for
 # this package. See LICENSE for the full text.
-license = {text = "PolyForm-Noncommercial-1.0.0"}
+license = "PolyForm-Noncommercial-1.0.0"
 license-files = ["LICENSE"]
 
 [project.optional-dependencies]
