@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,11 +11,12 @@ authors = [
 ]
 requires-python = ">= 3.11"
 readme = "README.md"
-# PolyForm Noncommercial 1.0.0 — free for research and education, NOT for
-# commercial use. Deliberately NOT an OSI-approved license: no OSI license can
-# express a noncommercial restriction, so "open source" must not be used for
-# this package. See LICENSE for the full text.
-license = "PolyForm-Noncommercial-1.0.0"
+# AGPL-3.0-or-later, the ecosystem's target licence for a member's own source
+# and this project's ruling of 2026-10-28. Supersedes the PolyForm Noncommercial
+# 1.0.0 declaration this file carried until that date. PEP 639 form: a bare
+# SPDX string, which requires setuptools>=77 and forbids a "License ::" trove
+# classifier. See LICENSE for the full text.
+license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 
 [project.optional-dependencies]

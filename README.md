@@ -23,3 +23,11 @@ Full documentation at [ReadTheDocs](https://hydro-fetch.readthedocs.io/).
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and contribution guidelines.
+
+## License
+
+Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
+The legacy corpus under `_old_code_to_refactor/` is carried under the same
+licence. The `v0.1.0` distribution predates the relicensing and declares
+PolyForm Noncommercial 1.0.0 in metadata that cannot be changed after
+publication.
