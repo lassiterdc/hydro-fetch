@@ -13,7 +13,7 @@
 | Source commit | `1fba5826d024cf10ffb5d31ebd268b2900c48651` (`1fba582`) |
 | Source branch | `main` |
 | Absorbed on | 2026-08-17 |
-| Absorbed by | hydro-fetch project-tier design session, on developer directive |
+| Absorbed by | hydro-fetch's project-level design work, on developer directive |
 
 **The source repository was NOT modified by this absorption.** No file there was edited, deleted, staged, or committed. Its working tree was verified unchanged immediately after the copy. Removing this code from `multidriver-swg` is a separate pass the developer performs; **do not assume it has happened**, and check the tree rather than this sentence.
 
@@ -33,6 +33,8 @@ If yes, it is hydro-fetch's. If it *consumes* such data to do stochastic weather
 
 Four files. Three moved whole; one moved in part.
 
+The unit-by-unit record of what `multidriver-swg` handed over in these four files is § 8.
+
 | Source file | Lines | What it does | Absorption |
 |---|---|---|---|
 | `_a2_dwnld_aorc_pre_mrms.py` | 94 | Opens the `noaa-nws-aorc-v1-1-1km` S3 zarr store for 1979–present, clips to an AOI derived as a buffered bounding box around the HRSD rain gages, writes a local zarr | **FULL** |
@@ -42,7 +44,7 @@ Four files. Three moved whole; one moved in part.
 
 ### 2.1 Scope this activates in hydro-fetch
 
-Absorbing `_a_dwnld_and_process_water-level-data.py` **activates the water-level half of hydro-fetch's declared scope.** hydro-fetch's specialist identity has always named water level; until this absorption, nothing in the repo did it. Every prior file here is precipitation. This is not a scope expansion beyond what was declared — it is the first code to occupy declared-but-empty scope, and the refactor's system partition has to account for it.
+Absorbing `_a_dwnld_and_process_water-level-data.py` **activates the water-level half of hydro-fetch's declared scope.** That scope has always included water level; until this absorption, nothing in the repo did it. Every prior file here is precipitation. This is not a scope expansion beyond what was declared — it is the first code to occupy declared-but-empty scope, and the refactor's system partition has to account for it.
 
 ---
 
@@ -122,7 +124,7 @@ The same fossil appears in `_b_gen_wshed-...` as a commented-out `def_inputs_for
 
 **Handling:** repaired, because there was no working behavior to preserve and "self-contained" would otherwise be meaningless for this file. A second-order problem surfaced in the process: the removed call unpacked a name `f_hourlyprecip`, which **also does not exist** in the source module.
 
-**CORRECTED 2026-08-17 — the alias in `_paths.py` is probably WRONG, not merely unconfirmed.** The `multidriver-swg-specialist` narrowed it: `_c` reads `f_daily_summaries` (the **multi-station** daily file) and its whole purpose is `find_stations_with_min_record_length` **across stations**, which is meaningless against a one-station airport export; `_c:105` further expects a `STATION_NAME` column a single-airport export would not need. The `_airport` suffix marks the single-station members of a pair. So `f_hourlyprecip` was almost certainly a **multi-station hourly** file that `_inputs.py` never defined, and aliasing it to `f_hourlyprecip_airport` pairs a multi-station daily with a single-station hourly. **Treat the alias as a placeholder for a missing constant, not as a probable match.**
+**CORRECTED 2026-08-17 — the alias in `_paths.py` is probably WRONG, not merely unconfirmed.** Review on the `multidriver-swg` side narrowed it: `_c` reads `f_daily_summaries` (the **multi-station** daily file) and its whole purpose is `find_stations_with_min_record_length` **across stations**, which is meaningless against a one-station airport export; `_c:105` further expects a `STATION_NAME` column a single-airport export would not need. The `_airport` suffix marks the single-station members of a pair. So `f_hourlyprecip` was almost certainly a **multi-station hourly** file that `_inputs.py` never defined, and aliasing it to `f_hourlyprecip_airport` pairs a multi-station daily with a single-station hourly. **Treat the alias as a placeholder for a missing constant, not as a probable match.**
 
 ### 5.2 `_a_dwnld_and_process_water-level-data.py` raises `NameError` partway through
 
@@ -148,7 +150,7 @@ gdf = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lat, df.lng))
 
 `points_from_xy(x, y)` takes **x first**, and x must be longitude. Passing `lat` as `x` writes the Sewells Point gage shapefile with transposed coordinates — the gage lands in the Indian Ocean. No retained `multidriver-swg` script reads `f_out_a_shp`, which is why this has never bitten anyone, but it sits in the acquisition section hydro-fetch has claimed and it will bite the first person who opens that shapefile.
 
-**Found by the `multidriver-swg-specialist` on review, not by the absorbing agent.** It is recorded here because the original list of three was asserted as complete and was not.
+**Found in review on the `multidriver-swg` side, not by the absorbing agent.** It is recorded here because the original list of three was asserted as complete and was not.
 
 ### 5.5 The SWMM export writes `.dat` files for columns that are not gages
 
@@ -184,9 +186,9 @@ Meanwhile the NCEI processing that **does** feed the pipeline is `_utils.process
 
 **It is not a library.** It is legacy reference material staged for refactor, exactly like the rest of `_old_code_to_refactor/`. The two shim modules exist so the four scripts can be *read and traced in isolation*; they are not a path-management design and should not be extended into one.
 
-**Overlap with existing hydro-fetch legacy code — check before refactoring.** This repo already carries `_old_code_to_refactor/hpc/d_download_AORC.sh`, a SLURM/shell AORC downloader. `_a2_dwnld_aorc_pre_mrms.py` is a *second* AORC acquisition path, Python and S3-zarr-based. **These two have not been reconciled.** Whether they are redundant, complementary, or targeting different AORC products is an open question for the refactor's AORC work chunk, and nobody should assume the answer.
+**Overlap with existing hydro-fetch legacy code — check before refactoring.** This repo already carries `_old_code_to_refactor/hpc/d_download_AORC.sh`, a SLURM/shell AORC downloader. `_a2_dwnld_aorc_pre_mrms.py` is a *second* AORC acquisition path, Python and S3-zarr-based. **These two have not been reconciled.** Whether they are redundant, complementary, or targeting different AORC products is an open question for the refactor's AORC download work, and nobody should assume the answer.
 
-Known related work chunks in the refactor plan: `03D aorc download`, `02E point extraction`, `01C path management`, `01E gis io`.
+Related refactor work: AORC download, point extraction, path management, and GIS input/output.
 
 ---
 
@@ -196,4 +198,105 @@ Known related work chunks in the refactor plan: `03D aorc download`, `02E point 
 - **Still yours:** everything in `_a_dwnld_and_process_water-level-data.py` from `#%% transferred to script b2` onward — surge event selection, thresholds, event summaries and time series. The physical lines exist in our copy for readability; the *scope* did not transfer. Check whether `_b2_event_selection.py` already supersedes them.
 - **Still yours, untouched:** `_b2`–`_b7`, `_d_build_water_level_generator.py`, `__ref_ams_functions.py`, `_inputs.py`, `_utils.py`.
 - **We did not modify your repo.** Verify that yourself rather than taking this line for it.
-- **Two of the four absorbed scripts are broken as committed in your tree** (§ 5.1, § 5.2), and a fifth script you retained — `_d_build_water_level_generator.py` — carries the same `def_inputs_for_*` fossil live (§ 5.6). If your refactor plan has chunks that assume they run, those chunks rest on a false premise — and that is true on your side whether or not the code moves.
+- **Two of the four absorbed scripts are broken as committed in your tree** (§ 5.1, § 5.2), and a fifth script you retained — `_d_build_water_level_generator.py` — carries the same `def_inputs_for_*` fossil live (§ 5.6). If your refactoring work assumes they run, that work rests on a false premise — and that is true on your side whether or not the code moves.
+
+---
+
+## 8. Unit-by-unit hand-off record, as received from `multidriver-swg`
+
+This section is hydro-fetch's record of every unit of the four files in § 2 that `multidriver-swg` handed to it. `multidriver-swg`'s disposition ledger (`tests/correspondence/ledger/ceded_files.toml` in that repository) records each of the four files as a scope-out to hydro-fetch and points at this section.
+
+| Field | Value |
+|---|---|
+| Ruling | The developer's ruling that these four files move to hydro-fetch, three whole and one in part as § 2 states (§ 1, "Absorbed on") |
+| Ruling date | 2026-08-17 |
+| Source repository | `multidriver-swg`, https://github.com/lassiterdc/multidriver-swg |
+| Revision the line ranges refer to | `4f3b50404acc09957946e6cb4d560bce0df76ee6`. The four files are byte-identical there and at the source commit in § 1 (`1fba582`). |
+| Unit rule | `multidriver-swg`'s extent rule, `tests/correspondence/extent.py` at that revision: every line of a file belongs to exactly one unit, and a unit's key is `{file}:{first}-{last}`, with further `,{first}-{last}` ranges where a unit's lines are not contiguous |
+| Surface of this record | this file, `_old_code_to_refactor/from_multidriver_swg/README.md` in the hydro-fetch repository, § 8 |
+| Count | 50 units across the four files, the count `multidriver-swg`'s ledger prints, plus one preamble extent in `_a_dwnld_and_process_water-level-data.py` (its module docstring, lines 1-9), which that count leaves out. All 51 are listed, so every line of the four files is accounted for. |
+
+The line ranges are `multidriver-swg`'s. The copies in this directory begin with a provenance header (§ 4.1), so their own line numbers are larger. The `Lines:` totals below count a last line that has no newline, so for `_a2_dwnld_aorc_pre_mrms.py` and `_c_gen_ncei_hrly_and_daily_data.py` they are one more than the `wc -l` figures in § 2.
+
+### 8.1 `_a2_dwnld_aorc_pre_mrms.py`
+
+Units: 11. Lines: 95.
+
+| Unit key | Line ranges | Name |
+|---|---|---|
+| `_a2_dwnld_aorc_pre_mrms.py:1-22` | 1-22 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:23-29` | 23-29 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:30-40` | 30-40 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:41-61` | 41-61 | `load_aorc_rain_data` |
+| `_a2_dwnld_aorc_pre_mrms.py:62-64` | 62-64 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:65-69` | 65-69 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:70-72` | 70-72 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:73-77` | 73-77 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:78-82` | 78-82 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:83-92` | 83-92 | none |
+| `_a2_dwnld_aorc_pre_mrms.py:93-95` | 93-95 | none |
+
+### 8.2 `_a_dwnld_and_process_water-level-data.py`
+
+Units: 15, plus 1 preamble extent. Lines: 487.
+
+| Unit key | Line ranges | Name |
+|---|---|---|
+| `_a_dwnld_and_process_water-level-data.py:1-9` | 1-9 | none (preamble above the first cell marker) |
+| `_a_dwnld_and_process_water-level-data.py:10-52` | 10-52 | none |
+| `_a_dwnld_and_process_water-level-data.py:53-100` | 53-100 | `dwnld_data` |
+| `_a_dwnld_and_process_water-level-data.py:101-184` | 101-184 | none |
+| `_a_dwnld_and_process_water-level-data.py:185-250,260-282` | 185-250,260-282 | none |
+| `_a_dwnld_and_process_water-level-data.py:251-259` | 251-259 | `sum_square_diffs` |
+| `_a_dwnld_and_process_water-level-data.py:283-285` | 283-285 | none |
+| `_a_dwnld_and_process_water-level-data.py:286-293` | 286-293 | `perform_statistical_test` |
+| `_a_dwnld_and_process_water-level-data.py:294-323` | 294-323 | `compare_stats` |
+| `_a_dwnld_and_process_water-level-data.py:324-333` | 324-333 | `succeeded_stat_test` |
+| `_a_dwnld_and_process_water-level-data.py:334-363` | 334-363 | none |
+| `_a_dwnld_and_process_water-level-data.py:364-367` | 364-367 | none |
+| `_a_dwnld_and_process_water-level-data.py:368-432` | 368-432 | `surge_event_selection` |
+| `_a_dwnld_and_process_water-level-data.py:433-448` | 433-448 | none |
+| `_a_dwnld_and_process_water-level-data.py:449-466` | 449-466 | none |
+| `_a_dwnld_and_process_water-level-data.py:467-487` | 467-487 | none |
+
+### 8.3 `_b_gen_wshed-precip-tseries-from-mrms.py`
+
+Units: 18. Lines: 333.
+
+| Unit key | Line ranges | Name |
+|---|---|---|
+| `_b_gen_wshed-precip-tseries-from-mrms.py:1-13` | 1-13 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:14-32` | 14-32 | `comp_dist_to_1to1_line` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:33-36` | 33-36 | `compute_frac_within_tolerance_of_1to1_line` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:37-104` | 37-104 | `plt_hexbin` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:105-124,131-136` | 105-124,131-136 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:125-130` | 125-130 | `transform_to_4326` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:137-162` | 137-162 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:163-166` | 163-166 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:167-194` | 167-194 | `return_gridcells_nearest_subcatchments` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:195-232` | 195-232 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:233-238` | 233-238 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:239-245` | 239-245 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:246-247` | 246-247 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:248-281` | 248-281 | `create_time_series` |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:282-286` | 282-286 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:287-294` | 287-294 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:295-322` | 295-322 | none |
+| `_b_gen_wshed-precip-tseries-from-mrms.py:323-333` | 323-333 | none |
+
+### 8.4 `_c_gen_ncei_hrly_and_daily_data.py`
+
+Units: 6. Lines: 84.
+
+| Unit key | Line ranges | Name |
+|---|---|---|
+| `_c_gen_ncei_hrly_and_daily_data.py:1-8` | 1-8 | none |
+| `_c_gen_ncei_hrly_and_daily_data.py:9-12` | 9-12 | none |
+| `_c_gen_ncei_hrly_and_daily_data.py:13-21` | 13-21 | `find_stations_with_min_record_length` |
+| `_c_gen_ncei_hrly_and_daily_data.py:22-26` | 22-26 | `filter_stations_with_min_record` |
+| `_c_gen_ncei_hrly_and_daily_data.py:27-77` | 27-77 | `gen_qaqc_plots` |
+| `_c_gen_ncei_hrly_and_daily_data.py:78-84` | 78-84 | none |
+
+### 8.5 The last five extents of `_a_dwnld_and_process_water-level-data.py`
+
+Lines 364-487, the five extents from `364-367` to `467-487` in § 8.2, are the event-selection tail that § 3.2 records as not absorbed as scope. They are listed because every line of the file was handed over as code, and this directory carries them. Their capability was not handed over: `multidriver-swg` keeps surge event selection in its own retained code, as `surge_event_selection` in `_old_code_to_refactor/_utils.py`, lines 1423-1539 at the revision above, which its `_b2_event_selection.py` calls at lines 432, 441 and 558. The source file calls `wlevel_event_selection` at lines 442, 452 and 453 (§ 5.2); in the copy in this directory the calls are at lines 464, 474 and 475. The name is defined nowhere. This is the confirmation against `_b2` that § 3.2 asks for.
